@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,44 +9,21 @@ import (
 	"web_crawler/pkg/crawler"
 	"web_crawler/pkg/crawler/spider"
 	"web_crawler/pkg/index"
+	"web_crawler/pkg/netsrv"
 )
 
 func main() {
-	keyWord := flag.String("s", "Go", "a key word for URLs")
-	fileName := flag.String("f", "", "file with scan results")
-	flag.Parse()
-
-	var file *os.File
-	var err error
-	var docks []crawler.Document
-	file, err = os.Open(*fileName)
-	if err != nil {
-		var webCrawler crawler.Interface = spider.New()
-		docks, err = webCrawler.Scan("https://go.dev", 2)
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
-	} else {
-		defer file.Close()
-		docks, err = getData(file)
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
-	}
+	fileName := "data.txt"
+	docks, _ := ScanOrReadDocuments(fileName)
 	scanResults := index.New()
-	for _, doc := range docks {
-		scanResults.AddDocument(doc)
-	}
+	scanResults.AddDocument(docks...)
+	saveData(fileName, docks)
+	netsrv.ListenAndServe("8000", scanResults)
+}
 
-	search_res := scanResults.GetDocuments(*keyWord)
-	for i := range search_res {
-		fmt.Printf("%s\n", search_res[i].Title)
-	}
-
-	if *fileName != "" {
-		file, err := os.Create(*fileName)
+func saveData(fileName string, docks []crawler.Document) {
+	if fileName != "" {
+		file, err := os.Create(fileName)
 		if err != nil {
 			log.Println(err)
 			return
@@ -55,6 +31,32 @@ func main() {
 		defer file.Close()
 		pushData(docks, file)
 	}
+}
+
+func ScanOrReadDocuments(fileName string) ([]crawler.Document, error) {
+	var err error
+	var docks []crawler.Document
+	var file *os.File
+
+	file, err = os.Open(fileName)
+	defer file.Close()
+
+	if err != nil {
+		var webCrawler crawler.Interface = spider.New()
+		docks, err = webCrawler.Scan("https://go.dev", 2)
+		if err != nil {
+			log.Println(err.Error())
+			return nil, fmt.Errorf("Scan error")
+		}
+	} else {
+
+		docks, err = getData(file)
+		if err != nil {
+			log.Println(err.Error())
+			return nil, err
+		}
+	}
+	return docks, nil
 }
 
 func getData(r io.Reader) ([]crawler.Document, error) {
