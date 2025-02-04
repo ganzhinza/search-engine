@@ -1,6 +1,7 @@
 package index
 
 import (
+	"strings"
 	"unicode"
 	"web_crawler/pkg/crawler"
 )
@@ -16,27 +17,34 @@ func New() *InvIndex {
 	return &index
 }
 
-func (index *InvIndex) AddDocument(document crawler.Document) {
-	document.ID = len(index.documents)
-	index.documents = append(index.documents, document)
+func (index *InvIndex) AddDocument(docks ...crawler.Document) {
+	for _, dock := range docks {
+		dock.ID = len(index.documents)
+		index.documents = append(index.documents, dock)
+		words := make(map[string]bool)
 
-	pureWords := make([]string, 0, 10)
-	start := 0
-	for end, l := range document.Title {
-		if !unicode.IsLetter(l) {
-			if end-start > 0 {
-				pureWords = append(pureWords, document.Title[start:end])
+		pureWords := make([]string, 0, 10)
+		start := 0
+		for end, l := range dock.Title {
+			if !unicode.IsLetter(l) {
+				keyWord := strings.ToLower(dock.Title[start:end])
+				if end-start > 0 && !words[keyWord] {
+					pureWords = append(pureWords, keyWord)
+					words[keyWord] = true
+				}
+				start = end + 1
 			}
-			start = end + 1
+		}
+		keyWord := strings.ToLower(dock.Title[start:])
+		if start != len(dock.Title)-1 {
+			pureWords = append(pureWords, keyWord)
+		}
+
+		for _, word := range pureWords {
+			index.Index[word] = append(index.Index[word], dock.ID)
 		}
 	}
-	if start != len(document.Title)-1 {
-		pureWords = append(pureWords, document.Title[start:])
-	}
 
-	for _, word := range pureWords {
-		index.Index[word] = append(index.Index[word], document.ID)
-	}
 }
 
 func (index *InvIndex) GetDocuments(word string) []crawler.Document {
