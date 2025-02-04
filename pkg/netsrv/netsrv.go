@@ -17,7 +17,8 @@ func handler(conn net.Conn, index *index.InvIndex) {
 	for {
 		buf, err := r.ReadBytes('\n')
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
+			return
 		}
 		i := 0
 		for ; i < len(buf) && unicode.IsLetter(rune(buf[i])); i++ {
@@ -31,7 +32,7 @@ func handler(conn net.Conn, index *index.InvIndex) {
 		queryRes := index.GetDocuments(query)
 
 		for _, doc := range queryRes {
-			conn.Write([]byte(doc.Title + string("\n\r")))
+			_, err = conn.Write([]byte(doc.Title + string("\n\r")))
 			if err != nil {
 				return
 			}
