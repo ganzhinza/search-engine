@@ -2,6 +2,7 @@ package netsrv
 
 import (
 	"bufio"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -30,11 +31,12 @@ func handler(conn net.Conn, index *index.InvIndex) {
 		queryRes := index.GetDocuments(query)
 
 		for _, doc := range queryRes {
-			conn.Write([]byte(doc.Title + doc.URL + string("\n\r")))
+			conn.Write([]byte(doc.Title + string("\n\r")))
 			if err != nil {
 				return
 			}
 		}
+		conn.Write([]byte{0})
 
 	}
 
@@ -52,6 +54,7 @@ func ListenAndServe(port string, index *index.InvIndex) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println("Connection accepted")
 		go handler(conn, index)
 	}
 }
