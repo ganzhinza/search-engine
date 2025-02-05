@@ -10,6 +10,7 @@ import (
 	"web_crawler/pkg/crawler/spider"
 	"web_crawler/pkg/index"
 	"web_crawler/pkg/netsrv"
+	"web_crawler/pkg/webapp"
 )
 
 func main() {
@@ -18,6 +19,7 @@ func main() {
 	scanResults := index.New()
 	scanResults.AddDocument(docks...)
 	saveData(fileName, docks)
+	webapp.Web(*scanResults)
 	netsrv.ListenAndServe("8000", scanResults)
 }
 
@@ -39,17 +41,15 @@ func ScanOrReadDocuments(fileName string) ([]crawler.Document, error) {
 	var file *os.File
 
 	file, err = os.Open(fileName)
-	defer file.Close()
-
 	if err != nil {
 		var webCrawler crawler.Interface = spider.New()
 		docks, err = webCrawler.Scan("https://go.dev", 2)
 		if err != nil {
 			log.Println(err.Error())
-			return nil, fmt.Errorf("Scan error")
+			return nil, fmt.Errorf("scan error")
 		}
 	} else {
-
+		defer file.Close()
 		docks, err = getData(file)
 		if err != nil {
 			log.Println(err.Error())

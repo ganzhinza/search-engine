@@ -8,13 +8,21 @@ import (
 
 type InvIndex struct {
 	documents []crawler.Document
-	Index     map[string][]int
+	index     map[string][]int
 }
 
 func New() *InvIndex {
 	index := InvIndex{}
-	index.Index = make(map[string][]int)
+	index.index = make(map[string][]int)
 	return &index
+}
+
+func (i *InvIndex) Index() map[string][]int {
+	return i.index
+}
+
+func (i *InvIndex) Documents() []crawler.Document {
+	return i.documents
 }
 
 func (index *InvIndex) AddDocument(docks ...crawler.Document) {
@@ -41,7 +49,7 @@ func (index *InvIndex) AddDocument(docks ...crawler.Document) {
 		}
 
 		for _, word := range pureWords {
-			index.Index[word] = append(index.Index[word], dock.ID)
+			index.index[word] = append(index.index[word], dock.ID)
 		}
 	}
 
@@ -49,7 +57,7 @@ func (index *InvIndex) AddDocument(docks ...crawler.Document) {
 
 func (index *InvIndex) GetDocuments(word string) []crawler.Document {
 	docs := make([]crawler.Document, 0, 10)
-	for _, id := range index.Index[word] {
+	for _, id := range index.index[word] {
 		docs = append(docs, index.SearchDocument(id))
 	}
 	return docs
@@ -74,16 +82,4 @@ func (index *InvIndex) SearchDocument(id int) crawler.Document {
 		}
 	}
 	return crawler.Document{ID: -1}
-}
-
-func (index *InvIndex) GetAllDocs() []crawler.Document {
-	return index.documents
-}
-
-func (index *InvIndex) GetAllWords() []string {
-	words := make([]string, 0, len(index.Index))
-	for word := range index.Index {
-		words = append(words, word)
-	}
-	return words
 }
