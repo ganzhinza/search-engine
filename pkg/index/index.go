@@ -63,14 +63,14 @@ func (index *InvIndex) GetDocuments(word string) []crawler.Document {
 	return docs
 }
 
-func (index *InvIndex) SearchDocument(id int) crawler.Document {
+func (index *InvIndex) searchDocument(id int) int {
 	l := 0
 	r := len(index.documents)
 	m := (l + r) / 2
 	for l <= r {
 		m = l + (r-l)/2
 		if id == index.documents[m].ID {
-			return index.documents[m]
+			return m
 		}
 		if id > index.documents[m].ID {
 			l = m + 1
@@ -81,5 +81,33 @@ func (index *InvIndex) SearchDocument(id int) crawler.Document {
 			continue
 		}
 	}
-	return crawler.Document{ID: -1}
+	return -1
+}
+
+func (index *InvIndex) SearchDocument(id int) crawler.Document {
+	return index.documents[index.searchDocument(id)]
+}
+
+func (index *InvIndex) DeleteDocument(id int) bool {
+	i := index.searchDocument(id)
+	if i == -1 {
+		return false
+	} else {
+		if i == len(index.documents) {
+			index.documents = index.documents[:len(index.documents)-1]
+		} else {
+			index.documents = append(index.documents[:i], index.documents[i+1:]...)
+		}
+		return true
+	}
+}
+
+func (index *InvIndex) UpdateDocument(doc crawler.Document) bool {
+	i := index.searchDocument(doc.ID)
+	if i == -1 {
+		return false
+	} else {
+		index.documents[i] = doc
+		return true
+	}
 }

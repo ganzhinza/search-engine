@@ -5,22 +5,32 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"web_crawler/pkg/api"
 	"web_crawler/pkg/crawler"
 	"web_crawler/pkg/crawler/spider"
 	"web_crawler/pkg/index"
-	"web_crawler/pkg/netsrv"
-	"web_crawler/pkg/webapp"
 )
+
+type server struct {
+	api *api.API
+}
 
 func main() {
 	fileName := "data.txt"
 	docks, _ := ScanOrReadDocuments(fileName)
-	scanResults := index.New()
-	scanResults.AddDocument(docks...)
-	saveData(fileName, docks)
-	webapp.Web(*scanResults)
-	netsrv.ListenAndServe("8000", scanResults)
+	invIndex := index.New()
+
+	invIndex.AddDocument(docks...)
+	defer saveData(fileName, docks)
+
+	//	webapp.Web(*invIndex)
+	//	netsrv.ListenAndServe("8000", invIndex)
+
+	srv := new(server)
+	srv.api = api.New(invIndex)
+	http.ListenAndServe(":8082", srv.api.Router())
 }
 
 func saveData(fileName string, docks []crawler.Document) {
